@@ -94,7 +94,7 @@ bool Boot(IosState& state, const std::string& path) {
     state.system.GetFileSystemController().CreateFactories(*state.system.GetFilesystem());
     state.system.GetUserChannel().clear();
 
-    const Service::AM::FrontendAppletParameters load_parameters{
+    Service::AM::FrontendAppletParameters load_parameters{
         .applet_id = Service::AM::AppletId::Application,
     };
     const auto result = state.system.Load(*state.emu_window, path, load_parameters);

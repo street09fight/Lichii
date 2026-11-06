@@ -37,6 +37,8 @@ target_link_libraries(lichii_ios PRIVATE common core input_common frontend_commo
 
 target_compile_options(lichii_ios PRIVATE
     $<$<COMPILE_LANGUAGE:OBJCXX>:-fobjc-arc>
+    # std::jthread/stop_token are still experimental in libc++ (the C++ flags get this globally).
+    $<$<COMPILE_LANGUAGE:OBJCXX>:-fexperimental-library>
     $<$<COMPILE_LANGUAGE:C,CXX,OBJCXX>:-Wno-conversion>
     $<$<COMPILE_LANGUAGE:C,CXX,OBJCXX>:-Wno-unused-variable>
     $<$<COMPILE_LANGUAGE:C,CXX,OBJCXX>:-Wno-unused-parameter>
