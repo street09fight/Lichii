@@ -8,6 +8,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <memory>
 #include <optional>
@@ -15,6 +16,8 @@
 #include <vector>
 
 #include <sys/resource.h>
+
+#include <fmt/format.h>
 
 #include "common/fs/path_util.h"
 #include "common/logging.h"

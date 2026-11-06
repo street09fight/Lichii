@@ -56,9 +56,10 @@ set_target_properties(lichii_ios PROPERTIES
     INSTALL_RPATH "@executable_path/Frameworks")
 
 # App icon (legacy CFBundleIconFiles, so no asset catalog compiler is needed).
-set(LICHII_ICON ${CMAKE_SOURCE_DIR}/dist/lichii.png)
-target_sources(lichii_ios PRIVATE ${LICHII_ICON})
-set_source_files_properties(${LICHII_ICON} PROPERTIES MACOSX_PACKAGE_LOCATION ".")
+add_custom_command(TARGET lichii_ios POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dist/lichii.png"
+            "$<TARGET_BUNDLE_DIR:lichii_ios>/lichii.png"
+    VERBATIM)
 
 if (IOS_MOLTENVK_FRAMEWORK)
     add_custom_command(TARGET lichii_ios POST_BUILD
