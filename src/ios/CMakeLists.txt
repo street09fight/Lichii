@@ -5,8 +5,6 @@
 # game list, on-screen controls and controller support. The bundle is unsigned; sideloading tools
 # sign it. MoltenVK.framework is copied into Frameworks/ from IOS_MOLTENVK_FRAMEWORK.
 
-enable_language(OBJCXX)
-
 set(IOS_MOLTENVK_FRAMEWORK "" CACHE PATH "Path to an iOS arm64 MoltenVK.framework")
 set(LICHII_IOS_BUNDLE_ID "io.github.lichii.ios" CACHE STRING "CFBundleIdentifier of the iOS app")
 
