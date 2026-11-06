@@ -33,8 +33,9 @@ if [ ! -f "$PREFIX/lib/libavcodec.a" ]; then
         --disable-autodetect --disable-everything \
         --disable-programs --disable-doc --disable-debug \
         --disable-avformat --disable-avdevice --disable-swresample \
+        `# hevc: h264's shared SEI code links against aom_film_grain, built only with hevc` \
         --enable-avcodec --enable-avfilter --enable-avutil --enable-swscale \
-        --enable-decoder=h264,vp8,vp9 --enable-parser=h264,vp8,vp9
+        --enable-decoder=h264,hevc,vp8,vp9 --enable-parser=h264,hevc,vp8,vp9
     make -j"$JOBS"
     make install
     echo "::endgroup::"
