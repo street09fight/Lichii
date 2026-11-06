@@ -531,6 +531,10 @@ public:
 #endif
 
     bool Init() {
+#ifdef YUZU_IOS
+        LOG_INFO(Common_Memory, "fastmem is not used on iOS");
+        return false;
+#endif
         const long page_size = sysconf(_SC_PAGESIZE);
         if (page_size < static_cast<long>(PageAlignment) ||
             page_size % static_cast<long>(PageAlignment) != 0) {

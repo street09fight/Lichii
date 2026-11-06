@@ -45,6 +45,23 @@ if (NETBSD)
     set(ENV{PKG_CONFIG_PATH} "${PKG_CONFIG_PATH}:${CMAKE_SYSROOT}/usr/pkg/lib/ffmpeg7/pkgconfig")
 endif()
 
+# iOS: only the core and the iOS app frontend. Dependencies are bundled or prebuilt for iOS by
+# .github/workflows/ios.yml (FFmpeg, OpenSSL, MoltenVK); everything desktop-only stays off.
+if (IOS)
+    add_compile_definitions(YUZU_IOS=1)
+    foreach(ios_off ENABLE_QT YUZU_CMD YUZU_ROOM YUZU_ROOM_STANDALONE ENABLE_LIBUSB
+                    ENABLE_WEB_SERVICE ENABLE_UPDATE_CHECKER ENABLE_CUBEB USE_DISCORD_PRESENCE
+                    BUILD_TESTING YUZU_TESTS DYNARMIC_TESTS YUZU_CRASH_DUMPS ENABLE_WERROR
+                    YUZU_USE_BUNDLED_MOLTENVK YUZU_USE_BUNDLED_FFMPEG YUZU_USE_BUNDLED_SDL3
+                    YUZU_USE_BUNDLED_OPENSSL YUZU_USE_BUNDLED_QT ENABLE_OPENGL)
+        set(${ios_off} OFF CACHE BOOL "" FORCE)
+    endforeach()
+    set(YUZU_DISABLE_LLVM ON CACHE BOOL "" FORCE)
+    set(OpenSSL_FORCE_SYSTEM ON)
+    set(OPENSSL_USE_STATIC_LIBS ON)
+    set(FFmpeg_FORCE_SYSTEM ON)
+endif()
+
 cmake_dependent_option(YUZU_STATIC_ROOM "Build a static room executable only (CI only)" OFF "LINUX" OFF)
 if (YUZU_STATIC_ROOM)
     set(YUZU_ROOM ON)
@@ -535,7 +552,13 @@ endfunction()
 # Put these BEFORE EXTERNALS or Boost WILL die
 # =============================================
 
-if (APPLE)
+if (IOS)
+    foreach(fw UIKit Metal QuartzCore CoreVideo CoreMedia Security UniformTypeIdentifiers Foundation
+               GameController CoreHaptics CoreMotion AVFoundation AudioToolbox CoreAudio
+               CoreBluetooth CoreGraphics IOSurface)
+        list(APPEND PLATFORM_LIBRARIES "-framework ${fw}")
+    endforeach()
+elseif (APPLE)
     foreach(fw Carbon Metal Cocoa IOKit CoreVideo CoreMedia Security UniformTypeIdentifiers Foundation)
         find_library(${fw}_LIBRARY ${fw} REQUIRED)
         list(APPEND PLATFORM_LIBRARIES ${${fw}_LIBRARY})

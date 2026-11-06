@@ -127,6 +127,10 @@ public:
         LEGACY_PATH(Yuzu, YUZU)
         LEGACY_PATH(Suyu, SUYU)
 #undef LEGACY_PATH
+#elif defined(YUZU_IOS)
+        eden_path = GetHomeDirectory() / "Documents";
+        eden_path_cache = GetHomeDirectory() / "Library/Caches" / EDEN_DIR;
+        eden_path_config = eden_path / CONFIG_DIR;
 #elif __ANDROID__
         ASSERT(!eden_path.empty());
         eden_path_cache = eden_path / CACHE_DIR;

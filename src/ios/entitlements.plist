@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Embedded in the unsigned IPA. Signing tools keep the ones the signing profile allows:
+     get-task-allow lets StikDebug attach for JIT; the memory entitlements raise the app's
+     memory and address space limits where the account supports them. -->
+<plist version="1.0">
+<dict>
+    <key>get-task-allow</key>
+    <true/>
+    <key>com.apple.developer.kernel.increased-memory-limit</key>
+    <true/>
+    <key>com.apple.developer.kernel.extended-virtual-addressing</key>
+    <true/>
+</dict>
+</plist>

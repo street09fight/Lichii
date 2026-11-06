@@ -21,7 +21,18 @@ std::shared_ptr<Common::DynamicLibrary> OpenLibrary(
     return context->GetDriverLibrary();
 #else
     auto library = std::make_shared<Common::DynamicLibrary>();
-#ifdef __APPLE__
+#ifdef YUZU_IOS
+    const auto bundle = Common::FS::GetBundleDirectory();
+    const auto framework = bundle / "Frameworks/MoltenVK.framework/MoltenVK";
+    const auto dylib = bundle / "Frameworks/libMoltenVK.dylib";
+    const char* library_paths[] = {framework.c_str(), dylib.c_str()};
+    for (const auto& library_path : library_paths) {
+        LOG_DEBUG(Render_Vulkan, "Trying Vulkan library: {}", library_path);
+        if (library->Open(library_path)) {
+            break;
+        }
+    }
+#elif defined(__APPLE__)
     const auto libvulkan_filename =
         Common::FS::GetBundleDirectory() / "Contents/Frameworks/libvulkan.1.dylib";
     const auto libmoltenvk_filename =

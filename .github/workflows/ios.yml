@@ -1,0 +1,150 @@
+name: ios
+
+# Builds an unsigned Lichii.ipa for iPhone/iPad. Sign and install it with SideStore, AltStore or
+# Sideloadly, then enable JIT with StikDebug.
+on:
+  push:
+    branches: [ios-port]
+    paths-ignore:
+      - "**.md"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ipa:
+    name: iOS arm64 IPA
+    runs-on: macos-15
+    timeout-minutes: 300
+    env:
+      DEPS: ${{ github.workspace }}/ios-deps
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_MAXSIZE: 3000M
+      CCACHE_COMPILERCHECK: content
+      CCACHE_SLOPPINESS: time_macros,include_file_mtime,include_file_ctime
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Install build tools
+        env:
+          HOMEBREW_NO_INSTALL_CLEANUP: 1
+          HOMEBREW_NO_AUTO_UPDATE: 1
+        run: brew install ninja glslang ccache
+
+      - name: Restore iOS dependencies
+        uses: actions/cache@v4
+        with:
+          path: ios-deps
+          key: ios-deps-${{ hashFiles('.github/ios/build-deps.sh') }}
+
+      - name: Restore CPM sources
+        uses: actions/cache@v4
+        with:
+          path: .cache/cpm
+          key: ios-cpm-${{ hashFiles('cpmfile.json', '**/cpmfile.json') }}
+          restore-keys: ios-cpm-
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ios-ccache-${{ github.sha }}
+          restore-keys: ios-ccache-
+
+      - name: Build FFmpeg, OpenSSL and MoltenVK for iOS
+        run: |
+          set -o pipefail
+          mkdir -p logs
+          bash .github/ios/build-deps.sh "$DEPS" 2>&1 | tee logs/deps.log
+
+      - name: Configure
+        run: |
+          set -o pipefail
+          cmake -S . -B build-ios -G Ninja \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_SYSROOT=iphoneos \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=16.0 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_OBJCXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_IGNORE_PREFIX_PATH="/opt/homebrew;/usr/local" \
+            -DGLSLANGVALIDATOR="$(brew --prefix)/bin/glslangValidator" \
+            -DFFMPEG_DIR="$DEPS" \
+            -DOPENSSL_ROOT_DIR="$DEPS" \
+            -DOPENSSL_INCLUDE_DIR="$DEPS/include" \
+            -DOPENSSL_CRYPTO_LIBRARY="$DEPS/lib/libcrypto.a" \
+            -DOPENSSL_SSL_LIBRARY="$DEPS/lib/libssl.a" \
+            -DIOS_MOLTENVK_FRAMEWORK="$DEPS/MoltenVK.framework" \
+            -DLICHII_BUILD_PLATFORM=ios-arm64 \
+            2>&1 | tee logs/configure.log
+
+      - name: Build
+        run: |
+          set -o pipefail
+          ccache -z
+          cmake --build build-ios --target lichii_ios -- -k 0 2>&1 | tee logs/build.log
+          ccache -s
+
+      - name: Package IPA
+        run: |
+          set -euo pipefail
+          app="$(find build-ios -name 'Lichii.app' -type d -maxdepth 4 | head -n 1)"
+          test -n "$app"
+          # Ad-hoc signature carrying the entitlements; sideloading tools re-sign with them.
+          codesign --force --sign - "$app/Frameworks/MoltenVK.framework"
+          codesign --force --sign - --entitlements src/ios/entitlements.plist "$app"
+          mkdir -p ipa/Payload
+          cp -R "$app" ipa/Payload/
+          (cd ipa && zip -qry ../Lichii.ipa Payload)
+          ls -lh Lichii.ipa
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lichii-ios
+          path: Lichii.ipa
+
+      - name: Publish ios-latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete ios-latest --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
+          gh release create ios-latest Lichii.ipa --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" --prerelease --title "Lichii for iOS (latest)" \
+            --notes "Unsigned IPA built from ${GITHUB_SHA}. Sign with SideStore/AltStore/Sideloadly, enable JIT with StikDebug."
+
+      # Build logs go to the ios-build-logs branch so they can be read without Actions access.
+      - name: Push build logs
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -u
+          out="$(mktemp -d)"
+          mkdir -p logs
+          for f in deps configure build; do
+            [ -f "logs/$f.log" ] && tail -n 4000 "logs/$f.log" > "$out/$f.log"
+          done
+          grep -n -E "error:|Error |FAILED|fatal|CMake Error" logs/*.log 2>/dev/null | head -n 400 > "$out/errors.txt" || true
+          {
+            echo "commit: $GITHUB_SHA"
+            echo "run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo "status: ${{ job.status }}"
+            echo "ipa: $( [ -f Lichii.ipa ] && echo yes || echo no )"
+            date -u
+          } > "$out/summary.txt"
+          cd "$out"
+          git init -q -b ios-build-logs
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -q -m "iOS build logs for $GITHUB_SHA (${{ job.status }})"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" ios-build-logs

@@ -29,7 +29,11 @@ EmuWindow_SDL3_VK::EmuWindow_SDL3_VK(InputCommon::InputSubsystem* input_subsyste
     render_window =
         SDL_CreateWindow(window_title.c_str(), Layout::ScreenUndocked::Width,
                          Layout::ScreenUndocked::Height,
-                         SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | Nx2HiddenWindowFlags());
+                         SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | Nx2HiddenWindowFlags()
+#ifdef YUZU_IOS
+                             | SDL_WINDOW_METAL | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS
+#endif
+        );
 
     const SDL_PropertiesID window_props = SDL_GetWindowProperties(render_window);
 
@@ -71,6 +75,8 @@ EmuWindow_SDL3_VK::EmuWindow_SDL3_VK(InputCommon::InputSubsystem* input_subsyste
         window_info.display_connection = x11_display;
         window_info.render_surface = reinterpret_cast<void*>(static_cast<uintptr_t>(x11_window));
     } else if (SDL_GetPointerProperty(window_props, SDL_PROP_WINDOW_COCOA_WINDOW_POINTER,
+                                      nullptr) != nullptr ||
+               SDL_GetPointerProperty(window_props, SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER,
                                       nullptr) != nullptr) {
         window_info.type = Core::Frontend::WindowSystemType::Cocoa;
         window_info.render_surface = SDL_Metal_GetLayer(SDL_Metal_CreateView(render_window));

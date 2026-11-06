@@ -290,6 +290,10 @@ if (YUZU_CMD)
     set_target_properties(yuzu-cmd PROPERTIES OUTPUT_NAME "eden-cli")
 endif()
 
+if (IOS)
+    add_subdirectory(ios)
+endif()
+
 if (ENABLE_QT)
     add_subdirectory(qt_common)
     add_subdirectory(yuzu)

@@ -325,6 +325,9 @@ endif()
 
 if (WIN32)
     target_sources(dynarmic PRIVATE backend/exception_handler_windows.cpp)
+elseif (IOS)
+    # No mach_exc.defs in the iOS SDK; Eden runs without fastmem there.
+    target_sources(dynarmic PRIVATE backend/exception_handler_generic.cpp)
 elseif (APPLE)
     find_path(MACH_EXC_DEFS_DIR "mach/mach_exc.defs")
     if (NOT MACH_EXC_DEFS_DIR)

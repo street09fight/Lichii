@@ -435,8 +435,8 @@ if (YUZU_CRASH_DUMPS AND NOT TARGET libbreakpad_client)
     endif()
 endif()
 
-if (APPLE)
-    # moltenvk
+if (APPLE AND NOT IOS)
+    # moltenvk (iOS ships MoltenVK.framework inside the app; see src/ios)
     if (NOT YUZU_USE_BUNDLED_MOLTENVK)
         find_library(MOLTENVK_LIBRARY MoltenVK)
     endif()
