@@ -1,0 +1,3 @@
+logs/build.log:3234:[1576/1875] Building CXX object src/core/CMakeFiles/core.dir/hle/service/fatal/fatal_p.cpp.o
+logs/build.log:3237:[1577/1875] Building CXX object src/core/CMakeFiles/core.dir/hle/service/fatal/fatal_u.cpp.o
+logs/build.log:3240:[1578/1875] Building CXX object src/core/CMakeFiles/core.dir/hle/service/fatal/fatal.cpp.o
