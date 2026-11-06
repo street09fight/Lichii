@@ -460,6 +460,13 @@ AddJsonPackage(boost)
 # TODO(crueter) investigate
 set(BOOST_NO_HEADERS ${Boost_ADDED})
 
+# Boost.Process's shell parser uses wordexp, which iOS forbids; Lichii does not use it.
+if (IOS AND TARGET boost_process)
+    get_target_property(boost_process_sources boost_process SOURCES)
+    list(FILTER boost_process_sources EXCLUDE REGEX "shell\\.cpp$")
+    set_target_properties(boost_process PROPERTIES SOURCES "${boost_process_sources}")
+endif()
+
 if (Boost_ADDED)
     add_compile_definitions(YUZU_BOOST_v1)
     if (NOT MSVC OR CXX_CLANG)
